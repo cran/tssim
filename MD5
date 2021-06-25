@@ -1,0 +1,15 @@
+e78fef66a42cf2424dcf623a88b6e10f *DESCRIPTION
+21192cafa5023dff20a671b5b29fd302 *NAMESPACE
+cda6b9f37759e582f2325de17eb30b82 *NEWS.md
+f0f474d91e517c9ebcef3187709bd6be *R/sim_calendar.R
+65e92dc7387f6205507be654328bbde6 *R/sim_daily.R
+686d795bffc030cfd956fe66ec00610b *R/sim_monthly.R
+13c18aeb96fbabd9354ac87e272cb9cc *R/sim_outlier.R
+0e9074ebc2480d60bd14f9b5d9361666 *R/sim_sfac.R
+9674a9ffd4506eba862935f5d164a9f1 *build/partial.rdb
+602de9bd624098a4bb60ea8873e82fb6 *man/dot-stretch_re.Rd
+fe86c9dc72213bf97547bb56512d3de5 *man/sim_calendar.Rd
+eba93d8696029fe073e1984f5b169bf3 *man/sim_daily.Rd
+9bab72c072857c94cdb62ff8b73f9259 *man/sim_monthly.Rd
+3e3113ae5c144465de8ab3362f2cdd62 *man/sim_outlier.Rd
+948137304c650c2c9de11c3b86afa4e5 *man/sim_sfac.Rd
