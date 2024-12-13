@@ -8,9 +8,10 @@ sim_sfac(
   n,
   freq = 12,
   sd = 1,
-  change_sd = 0.02,
-  beta_1 = 0.9,
-  beta_tau = 0,
+  change_sd = sd/10,
+  moving = TRUE,
+  beta_1 = 0.6,
+  beta_tau = 0.4,
   start = c(2020, 1),
   multiplicative = TRUE,
   ar = NULL,
@@ -18,7 +19,7 @@ sim_sfac(
   model = c(1, 1, 1),
   sc_model = list(order = c(1, 1, 1), ar = 0.65, ma = 0.25),
   smooth = TRUE,
-  burnin = 3,
+  burnin = 7,
   extra_smooth = FALSE
 )
 }
@@ -29,11 +30,13 @@ sim_sfac(
 
 \item{sd}{Standard deviation of the seasonal factor}
 
-\item{change_sd}{Standard deviation of simulation change to seasonal factor}
+\item{change_sd}{Standard deviation of shock to seasonal factor}
 
-\item{beta_1}{Persistance wrt to previous period of the seasonal change}
+\item{moving}{Is the seasonal pattern allowed to change over time}
 
-\item{beta_tau}{Persistance wrt to one year/cycle before of the seasonal change}
+\item{beta_1}{Persistence wrt to previous period of the seasonal change}
+
+\item{beta_tau}{Persistence wrt to one year/cycle of the seasonal change}
 
 \item{start}{Start date of output time series}
 
@@ -51,7 +54,7 @@ sim_sfac(
 
 \item{burnin}{(burnin*n-n) is the burn-in period}
 
-\item{extra_smooth}{Boolean. Should the seasonal factor be smooth on a period-by-period basis}
+\item{extra_smooth}{Boolean. Should the seasonal factor be smoothed on a period-by-period basis}
 }
 \value{
 The function returns a time series of class \code{ts} containing a seasonal or periodic effect.
@@ -61,7 +64,7 @@ Simulate a seasonal factor
 }
 \details{
 Standard deviation of the seasonal factor is in percent if a multiplicative time series model is assumed. Otherwise it is in unitless.
-Using a non-seasonal ARIMA model does not impact the seasonality of the time series. It can just make it easier for human eyes to grasp the seasonal nature of the series. The definition of the ar and ma parameter needs to be inline with the chosen model.
+Using a non-seasonal ARIMA model does not impact the seasonality of the time series. It can just make it easier for human eyes to grasp the seasonal nature of the series. The definition of the ar and ma parameter needs to be in line with the chosen model.
 }
 \examples{
 ts.plot(sim_sfac(60))

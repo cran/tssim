@@ -6,9 +6,11 @@
 \usage{
 sim_monthly(
   N,
-  sd = 1,
-  beta_1 = 0.9,
-  change_sd = 0.025,
+  sd = 5,
+  change_sd = sd/10,
+  beta_1 = 0.6,
+  beta_tau = 0.4,
+  moving = TRUE,
   model = list(order = c(3, 1, 1), ma = 0.5, ar = c(0.2, -0.4, 0.1)),
   start = c(2010, 1),
   multiplicative = TRUE,
@@ -20,9 +22,13 @@ sim_monthly(
 
 \item{sd}{Standard deviation for all seasonal factors}
 
+\item{change_sd}{Standard deviation of shock to seasonal factor}
+
 \item{beta_1}{Persistance wrt to previous period of the seasonal change}
 
-\item{change_sd}{Standard deviation of simulated change for all seasonal factors}
+\item{beta_tau}{Persistence wrt to one year/cycle of the seasonal change}
+
+\item{moving}{Is the seasonal pattern allowed to change over time}
 
 \item{model}{Model for non-seasonal time series. A list.}
 

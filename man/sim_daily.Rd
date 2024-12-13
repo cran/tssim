@@ -6,8 +6,8 @@
 \usage{
 sim_daily(
   N,
-  sd = 2.5,
-  change_sd = 0.05,
+  sd = 5,
+  moving = TRUE,
   week_sd = NA,
   month_sd = NA,
   year_sd = NA,
@@ -17,14 +17,15 @@ sim_daily(
   innovations_sd = 1,
   sa_sd = NA,
   model = list(order = c(3, 1, 1), ma = 0.5, ar = c(0.2, -0.4, 0.1)),
-  beta_1 = 0.9,
-  beta_tau = 0,
+  beta_tau7 = 0.01,
+  beta_tau31 = 0,
+  beta_tau365 = 0.2,
   start = c(2020, 1),
   multiplicative = TRUE,
   extra_smooth = FALSE,
   calendar = list(which = "Easter", from = -2, to = 2),
   outlier = NULL,
-  timewarping = TRUE,
+  timewarping = FALSE,
   as_index = FALSE
 )
 }
@@ -33,7 +34,7 @@ sim_daily(
 
 \item{sd}{Standard deviation for all seasonal factors}
 
-\item{change_sd}{Standard deviation of simulated change for all seasonal factors}
+\item{moving}{Is the seasonal pattern allowed to change over time}
 
 \item{week_sd}{Standard deviation of the seasonal factor for day-of-the-week}
 
@@ -41,11 +42,11 @@ sim_daily(
 
 \item{year_sd}{Standard deviation of the seasonal factor for day-of-the-year}
 
-\item{week_change_sd}{Standard deviation of simulated change to seasonal factor for day-of-the-week}
+\item{week_change_sd}{Standard deviation of shock to seasonal factor}
 
-\item{month_change_sd}{Standard deviation of simulated change to seasonal factor for month-of-the-week}
+\item{month_change_sd}{Standard deviation of shock to seasonal factor}
 
-\item{year_change_sd}{Standard deviation of simulated change to seasonal factor for year-of-the-week}
+\item{year_change_sd}{Standard deviation of shock to seasonal factor}
 
 \item{innovations_sd}{Standard deviation of the innovations used in the non-seasonal regarima model}
 
@@ -53,9 +54,11 @@ sim_daily(
 
 \item{model}{Model for non-seasonal time series. A list.}
 
-\item{beta_1}{Persistance wrt to previous period of the seasonal change}
+\item{beta_tau7}{Persistance wrt to one year/cycle before of the seasonal change for day-of-the-week}
 
-\item{beta_tau}{Persistance wrt to one year/cycle before of the seasonal change}
+\item{beta_tau31}{Persistance wrt to one year/cycle before of the seasonal change for day-of-the-month}
+
+\item{beta_tau365}{Persistance wrt to one year/cycle before of the seasonal change for day-of-the-year}
 
 \item{start}{Start date of output time series}
 
@@ -78,6 +81,7 @@ Multiple simulated daily time series of class xts including:
 \item{seas_adj}{The original series without calendar and seasonal effects}
 \item{sfac7}{The day-of-the-week effect}
 \item{sfac31}{The day-of-the-month effect}
+\item{sfac365}{The day-of-the-year effect}
 \item{cfac}{The calendar effects}
 \item{outlier}{The outlier effects}
 }
@@ -88,11 +92,10 @@ Simulate a daily seasonal series as described in Ollech (2021).
 \details{
 Standard deviation of the seasonal factor is in percent if a multiplicative time series model is assumed. Otherwise it is in unitless.
 Using a non-seasonal ARIMA model for the initialization of the seasonal factor does not impact the seasonality of the time series. It can just make it easier for human eyes to grasp the seasonal nature of the series. The definition of the ar and ma parameter needs to be inline with the chosen model.
-If only change_sd is specified, the change parameters for the single seasonal factors are set individually as change_sd/365*(length of seasonal cycle)
 The parameters that can be set for calendar and outlier are those defined in sim_outlier and sim_calendar.
 }
 \examples{
-x=sim_daily(5, multiplicative=TRUE, outlier=list(k=5, type=c("AO", "LS"), effect_size=50))
+x=sim_daily(5, sd=10, multiplicative=TRUE, outlier=list(k=5, type=c("AO", "LS")))
 ts.plot(x[,1])
 }
 \references{

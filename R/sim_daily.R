@@ -3,21 +3,22 @@
 #' Simulate a daily seasonal series as described in Ollech (2021).
 #' @param N length in years
 #' @param sd Standard deviation for all seasonal factors
-#' @param change_sd Standard deviation of simulated change for all seasonal factors
+#' @param moving Is the seasonal pattern allowed to change over time
 #' @param week_sd Standard deviation of the seasonal factor for day-of-the-week
 #' @param month_sd Standard deviation of the seasonal factor for day-of-the-month
 #' @param year_sd Standard deviation of the seasonal factor for day-of-the-year
-#' @param week_change_sd Standard deviation of simulated change to seasonal factor for day-of-the-week
-#' @param month_change_sd Standard deviation of simulated change to seasonal factor for month-of-the-week
-#' @param year_change_sd Standard deviation of simulated change to seasonal factor for year-of-the-week
+#' @param week_change_sd Standard deviation of shock to seasonal factor
+#' @param month_change_sd Standard deviation of shock to seasonal factor
+#' @param year_change_sd Standard deviation of shock to seasonal factor
 #' @param innovations_sd Standard deviation of the innovations used in the non-seasonal regarima model
 #' @param sa_sd Standard deviation of the non-seasonal time series
 #' @param extra_smooth Boolean. Should the seasonal factors be smooth on a period-by-period basis
 #' @param start Start date of output time series
 #' @param multiplicative Boolean. Should multiplicative seasonal factors be simulated
 #' @param model Model for non-seasonal time series. A list.
-#' @param beta_1 Persistance wrt to previous period of the seasonal change 
-#' @param beta_tau Persistance wrt to one year/cycle before of the seasonal change
+#' @param beta_tau7 Persistance wrt to one year/cycle before of the seasonal change for day-of-the-week
+#' @param beta_tau31 Persistance wrt to one year/cycle before of the seasonal change for day-of-the-month
+#' @param beta_tau365 Persistance wrt to one year/cycle before of the seasonal change for day-of-the-year
 #' @param calendar Parameters for calendar effect, a list, see sim_calendar
 #' @param outlier Parameters for outlier effect, a list, see sim_outlier
 #' @param timewarping Should timewarping be used to obtain the day-of-the-month factors
@@ -28,27 +29,53 @@
 #' \item{seas_adj}{The original series without calendar and seasonal effects}
 #' \item{sfac7}{The day-of-the-week effect}
 #' \item{sfac31}{The day-of-the-month effect}
+#' \item{sfac365}{The day-of-the-year effect}
 #' \item{cfac}{The calendar effects}
 #' \item{outlier}{The outlier effects}
 #' }
-#' @examples x=sim_daily(5, multiplicative=TRUE, outlier=list(k=5, type=c("AO", "LS"), effect_size=50))
+#' @examples x=sim_daily(5, sd=10, multiplicative=TRUE, outlier=list(k=5, type=c("AO", "LS")))
 #' ts.plot(x[,1])
 #' @author Daniel Ollech
 #' @details Standard deviation of the seasonal factor is in percent if a multiplicative time series model is assumed. Otherwise it is in unitless.
 #' Using a non-seasonal ARIMA model for the initialization of the seasonal factor does not impact the seasonality of the time series. It can just make it easier for human eyes to grasp the seasonal nature of the series. The definition of the ar and ma parameter needs to be inline with the chosen model.
-#' If only change_sd is specified, the change parameters for the single seasonal factors are set individually as change_sd/365*(length of seasonal cycle)
 #' The parameters that can be set for calendar and outlier are those defined in sim_outlier and sim_calendar.
 #' @references Ollech, D. (2021). Seasonal adjustment of daily time series. Journal of Time Series Econometrics. \doi{10.1515/jtse-2020-0028}
 #' @export
 
-sim_daily <- function(N, sd=2.5, change_sd=0.05, week_sd=NA, month_sd=NA, year_sd=NA, week_change_sd=NA, month_change_sd=NA, year_change_sd=NA, innovations_sd=1, sa_sd=NA,model=list(order=c(3,1,1), ma=0.5, ar=c(0.2, -0.4, 0.1)), beta_1=0.9, beta_tau=0, start=c(2020,1), multiplicative=TRUE, extra_smooth=FALSE, calendar=list(which="Easter", from=-2, to=2), outlier=NULL, timewarping=TRUE, as_index=FALSE) {
+
+sim_daily <-
+  function(N,
+           sd = 5,
+           moving = TRUE,
+           week_sd = NA,
+           month_sd = NA,
+           year_sd = NA,
+           week_change_sd = NA,
+           month_change_sd = NA,
+           year_change_sd = NA,
+           innovations_sd = 1,
+           sa_sd = NA,
+           model = list(order = c(3, 1, 1),
+                        ma = 0.5,
+                        ar = c(0.2,-0.4, 0.1)),
+           beta_tau7 = 0.01,
+           beta_tau31 = 0,
+           beta_tau365 = 0.2,
+           start = c(2020, 1),
+           multiplicative = TRUE,
+           extra_smooth = FALSE,
+           calendar = list(which = "Easter", from = -2, to = 2),
+           outlier = NULL,
+           timewarping = FALSE,
+           as_index = FALSE) {
+    
   if (is.na(week_sd)) {week_sd <- sd}
   if (is.na(month_sd)) {month_sd <- sd}
   if (is.na(year_sd)) {year_sd <- sd}
   
-  if (is.na(week_change_sd)) {week_change_sd <- change_sd/365*7}
-  if (is.na(month_change_sd)) {month_change_sd <- change_sd/365*31}
-  if (is.na(year_change_sd)) {year_change_sd <- change_sd}
+  if (is.na(week_change_sd)) {week_change_sd <- week_sd / 20}
+  if (is.na(month_change_sd)) {month_change_sd <- month_sd / 10}
+  if (is.na(year_change_sd)) {year_change_sd <- year_sd / 5}
   
   # Basic series
   series <- stats::ts(stats::arima.sim(n=365*N-1, model=model, sd=innovations_sd), start=start, frequency=365)
@@ -62,7 +89,7 @@ sim_daily <- function(N, sd=2.5, change_sd=0.05, week_sd=NA, month_sd=NA, year_s
   if(as_index & N >= 2) series <- series / mean(series[366:730], na.rm=TRUE) * 100
 
   # Add day-of-the-year-effect
-  sfac365 <- sim_sfac(length(series), freq=365, sd=year_sd, change_sd=year_change_sd, beta_1=beta_1, beta_tau=beta_tau, ar=0.99, ma=0.99, start=start, burnin=3, multiplicative=multiplicative, extra_smooth=extra_smooth)
+  sfac365 <- sim_sfac(length(series), freq=365, sd=year_sd, change_sd = year_change_sd, moving = moving, beta_1=0.9, beta_tau=beta_tau365, ar=0.99, ma=0.99, start=start, burnin=3, multiplicative=multiplicative, extra_smooth=extra_smooth)
   
   series <- dsa::ts2xts(series)
   times <- seq.Date(from=stats::start(series), to=stats::end(series), by="days") # Adding 29.2
@@ -83,16 +110,16 @@ sim_daily <- function(N, sd=2.5, change_sd=0.05, week_sd=NA, month_sd=NA, year_s
     }}
 
   # Add day-of-the-week-effect
-  sfac7 <- sim_sfac(length(series), freq=7, sd=week_sd, change_sd=week_change_sd, beta_1=beta_1, beta_tau=beta_tau, start=start, multiplicative=multiplicative, extra_smooth=extra_smooth)
+  sfac7 <- sim_sfac(length(series), freq=7, sd=week_sd, change_sd = week_change_sd, moving = moving, beta_1=0.95, beta_tau=beta_tau7, start=start, multiplicative=multiplicative, extra_smooth=extra_smooth)
   if (multiplicative) {
     series <- series * as.numeric(sfac7) } else {
       series <- series + as.numeric(sfac7)   
     }
 
-
   # Add day-of-the-month-effect
   series31 <- dsa:::.fill31(series,"spline") 
-  sfac31 <- sim_sfac(length(series31), freq=31, sd=month_sd, change_sd=month_change_sd, beta_1=beta_1, beta_tau=beta_tau, ar=0.9, ma=0.99, start=start, burnin=1, multiplicative=multiplicative, extra_smooth=extra_smooth) 
+  sfac31 <- sim_sfac(length(series31), freq=31, change_sd = month_change_sd, sd=month_sd, moving = moving, beta_1=0.9, beta_tau=beta_tau31, ar=0.9, ma=0.99, start=start, burnin=1, multiplicative=multiplicative, extra_smooth=extra_smooth) 
+  
   if (timewarping) {
     sfac31 <- .stretch_re(sfac31)
   } else {
@@ -105,6 +132,7 @@ sim_daily <- function(N, sd=2.5, change_sd=0.05, week_sd=NA, month_sd=NA, year_s
       sfac31 <- sfac31 / stats::sd(sfac31) * month_sd
       series <- series + as.numeric(sfac31)   
     }}
+
   
   # Add calendar effect
   if (is.null(calendar)) {cfac <- series * 0 + as.numeric(multiplicative)} else {
@@ -126,8 +154,7 @@ sim_daily <- function(N, sd=2.5, change_sd=0.05, week_sd=NA, month_sd=NA, year_s
   
   if (multiplicative) {series <- series*outlier_effect; seas_adj <- seas_adj * outlier_effect} else {series <- series + outlier_effect; seas_adj <- seas_adj + outlier_effect}
   
-  
-  
+
   # Post adjustment
   out <- xts::merge.xts(series, seas_adj, xts::xts(sfac7, zoo::index(series)), xts::xts(sfac31, zoo::index(series)), sfac365, cfac, outlier_effect)
   colnames(out) <- c("original", "seas_adj", "sfac7", "sfac31", "sfac365", "cfac", "outlier")
